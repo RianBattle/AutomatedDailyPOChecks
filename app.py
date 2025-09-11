@@ -1,3 +1,4 @@
+import csv
 import oracledb
 import os
 import shutil
@@ -19,8 +20,6 @@ DOWNLOADED_FILENAME = os.getenv("DOWNLOADED_FILENAME")
 
 ARCHIVE_DIRECTORY = os.getenv("ARCHIVE_DIRECTORY")
 ARCHIVE_FILENAME = os.getenv("ARCHIVE_FILENAME").replace("{0}", time.strftime("%m.%d.%y"))
-
-SQL = ""
 
 def create_driver():
   return webdriver.Chrome()
@@ -75,14 +74,17 @@ def move_report(downloaded_file_path):
     raise FileNotFoundError(f"File not found: {archive_file_path}")
   else:
     print(f"File moved to: {archive_file_path}")
+  return archive_file_path
 
 def process_report(file_path):
-  pass
-
-def load_sql():
-  fs = open("./queries/check_po_exists.sql", "r")
-  SQL = fs.read()
-  fs.close()
+  try:
+    with open(file_path, mode="r") as file:
+      csv_reader = csv.reader(file)
+      
+      for row in csv_reader:
+        print(row)
+  except Exception as e:
+    print(f"Error processing report: {e}")
 
 def create_oracle_connection():
   try:
@@ -98,11 +100,11 @@ def create_oracle_connection():
 def check_oracle_for_po(conn, po_number):
   try:
     fs = open("./queries/check_po_exists.sql", "r")
-    SQL = fs.read()
+    sql = fs.read()
     fs.close()
 
     cursor = conn.cursor()
-    cursor.execute(SQL, poNumber=po_number)
+    cursor.execute(sql, poNumber=po_number)
     
     rows = cursor.fetchall()
     cursor.close()
@@ -113,15 +115,15 @@ def check_oracle_for_po(conn, po_number):
     return False
 
 if __name__ == "__main__":
-  load_sql()
+  driver = create_driver()
 
-  oracle_conn = create_oracle_connection()
-  print(check_oracle_for_po(oracle_conn, "BHb8T6ff0"))
-  # driver = create_driver()
+  gentran_login(driver)
+  downloaded_file_path = download_report(driver)
 
-  # gentran_login(driver)
-  # downloaded_file_path = download_report(driver)
+  driver.close()
 
-  # driver.close()
+  archived_file_path = move_report(downloaded_file_path)
+  process_report(archived_file_path)
 
-  # move_report(downloaded_file_path)
+  # oracle_conn = create_oracle_connection()
+  # print(check_oracle_for_po(oracle_conn, "BHb8T6ff0"))
