@@ -1,8 +1,4 @@
 from dotenv import load_dotenv
-import sys
-import os
-services_dir = os.path.abspath("./services")
-sys.path.insert(0, services_dir)
 
 import email_module
 import report_processing
