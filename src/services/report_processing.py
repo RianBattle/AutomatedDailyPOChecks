@@ -14,7 +14,7 @@ def process_report():
   po_numbers = get_pos_from_report(archived_file_path)
   rename_processed_report(archived_file_path)
 
-  return po_numbers
+  check_for_missing_pos(po_numbers)
 
 def move_report(downloaded_file_path):
   if not os.path.exists(downloaded_file_path):
@@ -58,3 +58,15 @@ def rename_processed_report(file_path):
     os.remove(new_file_path)
   
   os.rename(file_path, new_file_path)
+
+def check_for_missing_pos(po_numbers):
+  from data_access import create_oracle_connection, get_missing_pos
+  from email_module import email_missing_pos
+
+  with create_oracle_connection() as conn:
+    if conn is not None:
+        missing_pos = get_missing_pos(conn, po_numbers)
+        if missing_pos:
+          email_missing_pos(missing_pos)
+    else:
+      raise ConnectionError("Failed to connect to Oracle database.")
